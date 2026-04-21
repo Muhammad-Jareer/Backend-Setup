@@ -1,0 +1,21 @@
+{
+  "name": "project-setup",
+  "version": "1.0.0",
+  "description": "basic project setup for backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "backend javascript node express"
+  },
+  "keywords": [
+    "backend",
+    "javascript",
+    "node",
+    "express"
+  ],
+  "author": "jareer",
+  "license": "ISC"
+}
