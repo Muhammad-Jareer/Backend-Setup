@@ -3,10 +3,8 @@ dotenv.config();
 
 import mongoose from "mongoose";
 import { DB_NAME } from "./constants.js";
-import express from "express";
-
-const app = express();
 import db_connection from "./db/index.js";
+import app from "./app.js";
 
 
 
