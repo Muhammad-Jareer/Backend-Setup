@@ -22,15 +22,17 @@ const uploadOnCloudinary = async (localFilePath) => {
         
     } catch (error) {
         console.log("Upload failed:", error);
-    } finally {
-        if(localFilePath) {
-            try {
-            fs.unlinkSync(localFilePath); // remove locally saved temporary file as the upload operation completed/fails
-            } catch (error) {
-                console.log("Failed to delete local file:", error.message);
-            }
-        }
-    }
+        fs.unlinkSync(localFilePath);
+    } 
+    // finally {
+    //     if(localFilePath) {
+    //         try {
+    //         fs.unlinkSync(localFilePath); // remove locally saved temporary file as the upload operation completed/fails
+    //         } catch (error) {
+    //             console.log("Failed to delete local file:", error.message);
+    //         }
+    //     }
+    // }
     
 }
 
