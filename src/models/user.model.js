@@ -24,7 +24,7 @@ const userSchema = new Schema (
         fullname: {
             type: String,
             required: true,
-            unique: true,
+            unique: false,
             trim: true
         },
         avatar: {
@@ -44,7 +44,7 @@ const userSchema = new Schema (
             type: String,
             required: [true, "password is required"],
         },
-        refereshToken: {
+        refreshToken: {
             type: String
         }
     }, 
@@ -88,10 +88,6 @@ userSchema.methods.generateRefereshToken = async function () {
             expiresIn: process.env.REFERSH_TOKEN_EXPIRY
         }
     )
-}
-
-userSchema.methods.generateRefereshToken = async function () {
-    
 }
 
 

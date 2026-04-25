@@ -26,11 +26,11 @@ const registerUser = asyncHandler( async (req, res) => {
 
     if(existdUser) throw new ApiError(409, "User with same email or username already exist")
 
-    const avatarLocalPath = req.files?.avatar[0]?.path;
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
     console.log("Avatar path:", avatarLocalPath);
     if(!avatarLocalPath) throw new ApiError(400, "avatar image is required")
 
-    const coverImageLocalPath = req.files?.coverImage[0]?.path
+    const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
     console.log("Cover Image path:", coverImageLocalPath);
 
 
@@ -48,8 +48,8 @@ const registerUser = asyncHandler( async (req, res) => {
         username: username.toLowerCase()
     })
 
-    const createdUser = await User.findById(_id).select(
-        "-password -refereshToken"
+    const createdUser = await User.findById(newUser._id).select(
+        "-password -refreshToken"
     )
 
     if(!createdUser) throw new ApiError(500, "something went wrong while registring new user!")

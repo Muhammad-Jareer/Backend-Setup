@@ -14,6 +14,7 @@ import app from "./app.js";
 
         app.listen(process.env.PORT, () => {
             console.log(`App is successfully running on port ${process.env.PORT}`);
+            console.log("MONGODB_URI:", process.env.MONGODB_URI );
     })
     } catch (error) {
         console.error("DB Connection Error", error);
