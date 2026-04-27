@@ -1,4 +1,3 @@
-import { User } from "../models/user.model.js";
 import { Video } from "../models/video.model.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -6,51 +5,40 @@ import asyncHandler from "../utils/asyncHandler.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
 
 const videoUpload = asyncHandler(async (req, res) => {
-    const {title, description} = req.body; // I think it will be from req.files videoFile, thumbnail, 
-
-    console.log("Video object BODY:", req.body);
-
-    if(!title?.trim()) throw new ApiError(400, "title is required")
-    if(!description?.trim()) throw new ApiError(400, "description is required")
-
-    // const owner = await User.findOne({
-    //     $or: [{username}, {email}]
-    // })
+    console.log("");
     
-    // console.log("Owner of the video :", owner);
+    const { title, description } = req.body;
 
-    // if(!owner) throw new ApiError(409, "User not found")
+    if (!title?.trim()) throw new ApiError(400, "title is required");
+    if (!description?.trim()) throw new ApiError(400, "description is required");
 
     const videoLocalPath = req.files?.videoFile?.[0]?.path;
-    if(!videoLocalPath) throw new ApiError(400, "video image is required")
+    if (!videoLocalPath) throw new ApiError(400, "video file is required");
 
     const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
-    if(!thumbnailLocalPath) throw new ApiError(400, "thumbnail image is required")
-    
-    const video = await uploadOnCloudinary(videoLocalPath)
-    if(!video) throw new ApiError(400, "video image is required")
+    if (!thumbnailLocalPath) throw new ApiError(400, "thumbnail is required");
 
-    const videoDuration = video.duration;
+    const video = await uploadOnCloudinary(videoLocalPath);
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
 
-    
-    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
-    if(!thumbnail) throw new ApiError(400, "thumbnail image is required")
-    
+    if (!video || !thumbnail) {
+        throw new ApiError(400, "upload failed");
+    }
+
     const videoUploaded = await Video.create({
         title,
         description,
-        duration: videoDuration,
-        videoFile: video.url,
-        thumbnail: thumbnail.url,
+        duration: video.duration,
+        videoFile: video.secure_url,
+        thumbnail: thumbnail.secure_url,
         views: 0,
         isPublished: true,
-        owner: "69ec6e4a2602d9f66663b433"
-    })
+        owner: req.user._id
+    });
 
     return res.status(201).json(
-        new ApiResponse(200, video, "Video Uploaded Successfully !!")
-    )
-
-})
+        new ApiResponse(200, videoUploaded, "Video uploaded successfully")
+    );
+});
 
 export default videoUpload;
