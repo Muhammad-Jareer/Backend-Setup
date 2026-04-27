@@ -26,8 +26,6 @@ const generateTokens = async (userId) => {
 const registerUser = asyncHandler( async (req, res) => {
     const {fullname, email, username, password} = req.body;
 
-    console.log("BODY:", req.body);
-
     if(!fullname?.trim()) throw new ApiError(400, "fullname is required")
     if(!email?.trim()) throw new ApiError(400, "email is required")
     if(!username?.trim()) throw new ApiError(400, "username is required")
@@ -44,17 +42,19 @@ const registerUser = asyncHandler( async (req, res) => {
     if(!avatarLocalPath) throw new ApiError(400, "avatar image is required")
 
     const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
+    if(!coverImageLocalPath) throw new ApiError(400, "avatar image is required")
 
 
     const avatar = await uploadOnCloudinary(avatarLocalPath)
-    if(!avatar) throw new ApiError(400, "avatar image is required")
+    if(!avatar) throw new ApiError(400, "avatar image is not uploaded to cloudinary")
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    if(!coverImage) throw new ApiError(400, "coverImage is not uploaded to cloudinary")
 
     const newUser = await User.create({
         fullname,
-        avatar: avatar.url,
-        coverImage: coverImage?.url || "",
+        avatar: avatar.secure_url,
+        coverImage: coverImage?.secure_url || "",
         email,
         password,
         username: username.toLowerCase()
@@ -178,4 +178,86 @@ const refereshAccessToken = asyncHandler(async (req, res) => {
 
 })
 
-export {registerUser, loginUser, logoutUser, refereshAccessToken}
+const changeCurrentUserPassword = asyncHandler(async (req, res) => {
+    const { oldPassword, newPassword } = req.body
+
+    if( !oldPassword.trim() && !newPassword.trim() ) throw new ApiError("Both passwords are required")
+    
+    const user =  await User.findById(req.user._id)
+    if( !user ) throw new ApiError(404, "User not found")
+
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+    if(!isPasswordCorrect) throw new ApiError(401, "incorrect old password")
+
+    user.password = newPassword;
+
+    await user.save({validateBeforeSave: false})
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            {},
+            "password is changed successfully"
+        )
+    )
+    
+})
+
+const getUserProfile = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).select("-password -refreshToken");
+    if(!user) throw new ApiError(404, "User not found")
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            user,
+            "Welcome to profile"
+        )
+    )
+})
+
+
+const updateProfile = asyncHandler(async (req, res) => {
+
+    const { newUsername, newFullname } = req.body;
+
+    if (!newUsername?.trim() && !newFullname?.trim() && !req.files)
+        throw new ApiError(400, "At least one field is required");
+
+    const user = await User.findById(req.user._id);
+    if (!user) throw new ApiError(404, "User not found");
+
+    // update text fields
+    if (newUsername?.trim()) user.username = newUsername;
+    if (newFullname?.trim()) user.fullname = newFullname;
+
+    // avatar upload
+    const avatarLocalPath = req.files?.newAvatar?.[0]?.path;
+    if (avatarLocalPath) {
+        const newAvatar = await uploadOnCloudinary(avatarLocalPath);
+        if (!newAvatar) throw new ApiError(400, "Avatar upload failed");
+        user.avatar = newAvatar.secure_url;
+    }
+
+    // cover upload
+    const coverLocalPath = req.files?.newCoverImage?.[0]?.path;
+    if (coverLocalPath) {
+        const newCoverImage = await uploadOnCloudinary(coverLocalPath);
+        if (!newCoverImage) throw new ApiError(400, "Cover upload failed");
+        user.coverImage = newCoverImage.secure_url;
+    }
+
+    await user.save({ validateBeforeSave: false });
+
+    const updatedUser = await User.findById(user._id)
+        .select("-password -refreshToken");
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedUser, "Profile updated successfully")
+    );
+});
+
+export {registerUser, loginUser, logoutUser, refereshAccessToken, changeCurrentUserPassword, getUserProfile, updateProfile}

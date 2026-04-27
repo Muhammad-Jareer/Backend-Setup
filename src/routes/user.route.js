@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginUser, logoutUser, refereshAccessToken, registerUser } from "../controllers/user.controller.js";
+import { changeCurrentUserPassword, getUserProfile, loginUser, logoutUser, refereshAccessToken, registerUser, updateProfile } from "../controllers/user.controller.js";
 import {upload} from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router()
@@ -25,5 +25,19 @@ router.post("/login", loginUser )
 //secured routes
 router.post("/logout", verifyJWT, logoutUser )
 router.post("/referesh-token", refereshAccessToken )
+router.post("/change-password", verifyJWT, changeCurrentUserPassword); 
+router.post("/profile", verifyJWT, getUserProfile); 
+router.post("/profile-update", 
+    upload.fields([
+        {
+            name: "newAvatar",
+            maxCount: 1
+        },
+        {
+            name: "newCoverImage",
+            maxCount: 1
+        }
+    ]),
+    verifyJWT, updateProfile); 
 
 export default router;
