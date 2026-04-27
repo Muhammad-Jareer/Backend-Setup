@@ -19,14 +19,11 @@ router.post("/register",
     registerUser
 )
 
-router.post("/login", 
-    
-    loginUser
-)
+router.post("/login", loginUser )
 
 
 //secured routes
-router.post("/logout", verifyJWT, logoutUser)
-router.post("/referesh-token", refereshAccessToken)
+router.post("/logout", verifyJWT, logoutUser )
+router.post("/referesh-token", refereshAccessToken )
 
 export default router;

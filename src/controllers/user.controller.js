@@ -139,7 +139,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 })
 
 const refereshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefereshToken = req.cookies.refereshToken || req.body.refereshToken;
+    const incomingRefereshToken = req.cookies.refreshToken || req.body.refreshToken;
     if(!incomingRefereshToken) throw new ApiError(401, "unauthorized request") 
 
     try {
@@ -151,7 +151,7 @@ const refereshAccessToken = asyncHandler(async (req, res) => {
         const user = await User.findById(decodedToken?._id)
         if(!user) throw new ApiError(401, "invalid referesh token")
     
-        if(incomingRefereshToken !== user.refereshToken) throw new ApiError(401, "Referesh Token is exoired or used")
+        if(incomingRefereshToken !== user.refreshToken) throw new ApiError(401, "Referesh Token is exoired or used")
     
         const {accessToken, refreshToken} = await generateTokens(user._id)
         
@@ -163,7 +163,7 @@ const refereshAccessToken = asyncHandler(async (req, res) => {
         return res
         .status(200)
         .cookie("accessToken", accessToken, options)
-        .cookie("refereshToken", refreshToken, options)
+        .cookie("refreshToken", refreshToken, options)
         .json(
             new ApiResponse(
                 200, 
