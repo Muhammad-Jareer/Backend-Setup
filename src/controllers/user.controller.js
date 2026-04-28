@@ -224,36 +224,57 @@ const updateProfile = asyncHandler(async (req, res) => {
 
     const { newUsername, newFullname } = req.body;
 
-    if (!newUsername?.trim() && !newFullname?.trim() && !req.files)
-        throw new ApiError(400, "At least one field is required");
-
-    const user = await User.findById(req.user._id);
-    if (!user) throw new ApiError(404, "User not found");
-
-    // update text fields
-    if (newUsername?.trim()) user.username = newUsername;
-    if (newFullname?.trim()) user.fullname = newFullname;
-
-    // avatar upload
+    // files (if provided)
     const avatarLocalPath = req.files?.newAvatar?.[0]?.path;
+    const coverLocalPath = req.files?.newCoverImage?.[0]?.path;
+
+    // dynamic update object
+    const updateFields = {};
+
+    // ---------- TEXT FIELDS ----------
+    if (newUsername?.trim()) {
+        updateFields.username = newUsername.trim().toLowerCase();
+    }
+
+    if (newFullname?.trim()) {
+        updateFields.fullname = newFullname.trim();
+    }
+
+    // ---------- AVATAR UPLOAD ----------
     if (avatarLocalPath) {
         const newAvatar = await uploadOnCloudinary(avatarLocalPath);
-        if (!newAvatar) throw new ApiError(400, "Avatar upload failed");
-        user.avatar = newAvatar.secure_url;
+        if (!newAvatar?.secure_url) {
+            throw new ApiError(400, "Avatar upload failed");
+        }
+
+        updateFields.avatar = newAvatar.secure_url;
     }
 
-    // cover upload
-    const coverLocalPath = req.files?.newCoverImage?.[0]?.path;
+    // ---------- COVER IMAGE UPLOAD ----------
     if (coverLocalPath) {
         const newCoverImage = await uploadOnCloudinary(coverLocalPath);
-        if (!newCoverImage) throw new ApiError(400, "Cover upload failed");
-        user.coverImage = newCoverImage.secure_url;
+        if (!newCoverImage?.secure_url) {
+            throw new ApiError(400, "Cover image upload failed");
+        }
+
+        updateFields.coverImage = newCoverImage.secure_url;
     }
 
-    await user.save({ validateBeforeSave: false });
+    // ---------- NOTHING TO UPDATE ----------
+    if (Object.keys(updateFields).length === 0) {
+        throw new ApiError(400, "No fields provided for update");
+    }
 
-    const updatedUser = await User.findById(user._id)
-        .select("-password -refreshToken");
+    // ---------- UPDATE ONLY PROVIDED FIELDS ----------
+    const updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        { $set: updateFields },
+        { new: true, runValidators: true }
+    ).select("-password -refreshToken");
+
+    if (!updatedUser) {
+        throw new ApiError(404, "User not found");
+    }
 
     return res.status(200).json(
         new ApiResponse(200, updatedUser, "Profile updated successfully")
@@ -388,4 +409,24 @@ const verifyUser = asyncHandler(async (req, res) => {
 
 })
 
-export {registerUser, loginUser, logoutUser, refereshAccessToken, changeCurrentUserPassword, getUserProfile, updateProfile, deleteUser, forgotPassword, resetPassword, verifyEmail, verifyUser }
+const publicProfile = asyncHandler(async (req, res) => {
+    const { username } = req.params
+
+     const user = await User.findOne({ username }).select("username displayName avatar bio createdAt");
+     if(!user) throw new ApiError(404, "user not found")
+
+     const profile = {
+        username: user.username,
+        displayName: user.displayName,
+        avatar: user.avatar,
+        bio: user.bio,
+        joinedAt: user.createdAt
+    };
+    if(!profile) throw new ApiError(404, "Profile not found") 
+
+    return res
+    .status(200)
+    .json(new ApiResponse (200, {profile}, "User profile fetched successfully"))
+})
+
+export {registerUser, loginUser, logoutUser, refereshAccessToken, changeCurrentUserPassword, getUserProfile, updateProfile, deleteUser, forgotPassword, resetPassword, verifyEmail, verifyUser, publicProfile }
