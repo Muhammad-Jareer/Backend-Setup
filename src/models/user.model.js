@@ -1,6 +1,8 @@
 import mongoose, {Schema} from "mongoose";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import { type } from "os";
 
 const userSchema = new Schema (
     {
@@ -44,6 +46,22 @@ const userSchema = new Schema (
         },
         refreshToken: {
             type: String
+        },
+        passwordResetToken: {
+            type: String
+        },
+        passwordResetExpires: {
+            type: Date
+        },
+        verificationToken: {
+            type: String,
+        },
+        verificationTokenExpires: {
+            type: Date
+        },
+        isVerified: {
+            type: Boolean,
+            default: false
         }
     }, 
     {
@@ -56,6 +74,37 @@ userSchema.pre("save", async function (next) {
     this.password = await bcrypt.hash(this.password, 10)
     next()
 })
+
+userSchema.methods.generatePasswordResetToken = function () {
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    this.passwordResetToken =
+        crypto.createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
+
+    this.passwordResetExpires =
+        Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    return resetToken;
+};
+
+userSchema.methods.generateVerificationToken  = function () {
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
+    this.verificationToken = 
+    crypto.createHash("sha256")
+    .update(verificationToken)
+    .digest("hex")
+
+    this.verificationTokenExpires = 
+    Date.now() + 5 * 60 * 1000;
+
+    return verificationToken;
+}
+
+
 
 userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password)

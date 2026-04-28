@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changeCurrentUserPassword, getUserProfile, loginUser, logoutUser, refereshAccessToken, registerUser, updateProfile } from "../controllers/user.controller.js";
+import { changeCurrentUserPassword, deleteUser, forgotPassword, getUserProfile, loginUser, logoutUser, refereshAccessToken, registerUser, resetPassword, updateProfile, verifyEmail, verifyUser } from "../controllers/user.controller.js";
 import {upload} from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router()
@@ -20,6 +20,10 @@ router.post("/register",
 )
 
 router.post("/login", loginUser )
+router.post("/forgot-password", forgotPassword); 
+router.post("/reset-password/:token", resetPassword); 
+router.post("/verification-email", verifyEmail); 
+router.post("/verify-user/:token", verifyUser); 
 
 
 //secured routes
@@ -39,5 +43,7 @@ router.post("/profile-update",
         }
     ]),
     verifyJWT, updateProfile); 
+
+router.post("/delete-user", verifyJWT, deleteUser); 
 
 export default router;
