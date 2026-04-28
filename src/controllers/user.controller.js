@@ -409,27 +409,33 @@ const verifyUser = asyncHandler(async (req, res) => {
 
 })
 
-const getUserChannelProfile = asyncHandler(async(req, res) => {
+const getChannelProfile = asyncHandler(async(req, res) => {
     const {username} = req.params;
     if(!username) throw new ApiError(400, "username is missing")
 
     const channel = await User.aggregate([
-        {
+            {
             $match: {
                 username: username?.toLowerCase()
-            },
+            }
+        },
+        {
             $lookup: {
                 from: "subscriptions",
+                localField: "_id",
                 foreignField: "channel",
-                localField: "_id",
                 as: "subscribers"
-            },
+            }
+        },
+        {
             $lookup: {
                 from: "subscriptions",
-                foreignField: "subscriber",
                 localField: "_id",
+                foreignField: "subscriber",
                 as: "subscribedTO"
-            },
+            }
+        },
+        {
             $addFields: {
                 subscribersCount: {
                     $size: "$subscribers"
@@ -439,12 +445,16 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
                 },
                 isSubscribed: {
                     $cond: {
-                        if: {$in: [req.user?.id, "$subscribers.subscriber"]},
+                        if: {
+                            $in: [req.user?._id, "$subscribers.subscriber"]
+                        },
                         then: true,
                         else: false
                     }
                 }
-            },
+            }
+        },
+        {
             $project: {
                 fullname: 1,
                 username: 1,
@@ -457,7 +467,7 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
                 createdAt: 1
             }
         }
-    ])
+])
 
     if(!channel?.length) throw new ApiError(404, "Channel does not exist")
 
@@ -469,4 +479,96 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
     .json(new ApiResponse(200, channel[0], "User profile fetched successfully"))
 })
 
-export {registerUser, loginUser, logoutUser, refereshAccessToken, changeCurrentUserPassword, getUserProfile, updateProfile, deleteUser, forgotPassword, resetPassword, verifyEmail, verifyUser, getUserChannelProfile }
+const getWatchHistory = asyncHandler(async (req, res) => {
+    const {username} = req.params;
+    if(!username || !(username.trim())) throw new ApiError(400, "username is required");
+
+    const watchHistory = await User.aggregate([
+       { $match: {
+            username: username.toLowerCase()
+        }},
+        {$lookup: {
+            from: "videos",
+            foreignField: "_id",
+            localField: "watchHistory",
+            as: "watchHistory"
+        }},
+        {$addFields: {
+            videosCount: {
+                $size: "$watchHistory"
+            }
+        }},
+        {
+            $project: {
+                fullname: 1,
+                username: 1,
+                watchHistory: 1,
+                videosCount: 1,
+            }
+        }
+
+    ])
+
+    console.log(watchHistory);
+    
+    res
+    .status(200)
+    .json(new ApiResponse(200, watchHistory[0], "watch hostory fetched successfully"))
+})
+
+const getChannelVideos = asyncHandler(async(req, res) => {
+    const {username} = req.params;
+    if(!username || !(username.trim())) throw new ApiError(400, "wrong username")
+
+    const [channelVideos] = await User.aggregate([
+        {
+            $match: {
+                username: username.toLowerCase()
+            }
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "_id",
+                foreignField: "owner",
+                as: "videoList"
+            }
+        },
+        {
+            $addFields: {
+                videoCount: {$size: "$videoList"}
+            }
+        },
+        {
+            $project: {
+                fullname: 1,
+                username: 1,
+                avatar: 1,
+                coverImage: 1,
+                createdAt: 1,
+                videoCount: 1,
+                videoList: {
+                $map: {
+                input: "$videoList",
+                as: "video",
+                in: {
+                    _id: "$$video._id",
+                    title: "$$video.title",
+                    thumbnail: "$$video.thumbnail",
+                    duration: "$$video.duration",
+                    views: "$$video.views",
+                    createdAt: "$$video.createdAt"
+                }
+            }
+        }
+            }
+        }
+    ])
+
+    res
+    .status(200)
+    .json(new ApiResponse(200, channelVideos, "videos successfully fetched"))
+})
+
+
+export {registerUser, loginUser, logoutUser, refereshAccessToken, changeCurrentUserPassword, getUserProfile, updateProfile, deleteUser, forgotPassword, resetPassword, verifyEmail, verifyUser, getChannelProfile, getWatchHistory, getChannelVideos }
