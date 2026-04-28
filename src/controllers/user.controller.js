@@ -409,24 +409,64 @@ const verifyUser = asyncHandler(async (req, res) => {
 
 })
 
-const publicProfile = asyncHandler(async (req, res) => {
-    const { username } = req.params
+const getUserChannelProfile = asyncHandler(async(req, res) => {
+    const {username} = req.params;
+    if(!username) throw new ApiError(400, "username is missing")
 
-     const user = await User.findOne({ username }).select("username displayName avatar bio createdAt");
-     if(!user) throw new ApiError(404, "user not found")
+    const channel = await User.aggregate([
+        {
+            $match: {
+                username: username?.toLowerCase()
+            },
+            $lookup: {
+                from: "subscriptions",
+                foreignField: "channel",
+                localField: "_id",
+                as: "subscribers"
+            },
+            $lookup: {
+                from: "subscriptions",
+                foreignField: "subscriber",
+                localField: "_id",
+                as: "subscribedTO"
+            },
+            $addFields: {
+                subscribersCount: {
+                    $size: "$subscribers"
+                },
+                subscribedCount: {
+                    $size: "$subscribedTO"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: {$in: [req.user?.id, "$subscribers.subscriber"]},
+                        then: true,
+                        else: false
+                    }
+                }
+            },
+            $project: {
+                fullname: 1,
+                username: 1,
+                avatar: 1,
+                coverImage: 1,
+                isVerified: 1,
+                subscribersCount: 1,
+                subscribedCount: 1,
+                isSubscribed: 1,
+                createdAt: 1
+            }
+        }
+    ])
 
-     const profile = {
-        username: user.username,
-        displayName: user.displayName,
-        avatar: user.avatar,
-        bio: user.bio,
-        joinedAt: user.createdAt
-    };
-    if(!profile) throw new ApiError(404, "Profile not found") 
+    if(!channel?.length) throw new ApiError(404, "Channel does not exist")
+
+    console.log(channel);
+    console.log(typeof(channel));
 
     return res
     .status(200)
-    .json(new ApiResponse (200, {profile}, "User profile fetched successfully"))
+    .json(new ApiResponse(200, channel[0], "User profile fetched successfully"))
 })
 
-export {registerUser, loginUser, logoutUser, refereshAccessToken, changeCurrentUserPassword, getUserProfile, updateProfile, deleteUser, forgotPassword, resetPassword, verifyEmail, verifyUser, publicProfile }
+export {registerUser, loginUser, logoutUser, refereshAccessToken, changeCurrentUserPassword, getUserProfile, updateProfile, deleteUser, forgotPassword, resetPassword, verifyEmail, verifyUser, getUserChannelProfile }
