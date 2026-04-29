@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changeCurrentUserPassword, deleteUser, forgotPassword, getUserProfile, loginUser, logoutUser, getChannelProfile, refereshAccessToken, registerUser, resetPassword, updateProfile, verifyEmail, verifyUser, getWatchHistory, getChannelVideos } from "../controllers/user.controller.js";
+import { changeCurrentUserPassword, deleteUser, forgotPassword, getUserProfile, loginUser, logoutUser, refereshAccessToken, registerUser, resetPassword, updateProfile, verifyEmail, verifyUser, getWatchHistory } from "../controllers/user.controller.js";
 import {upload} from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router()
@@ -24,13 +24,11 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword); 
 router.post("/verification-email", verifyEmail); 
 router.post("/verify-user/:token", verifyUser); 
-router.get("/get-channel-profile/:username", getChannelProfile); 
-router.get("/get-channel-videos/:username", getChannelVideos); 
+router.post("/referesh-token", refereshAccessToken )
 
 
 //secured routes
 router.post("/logout", verifyJWT, logoutUser )
-router.post("/referesh-token", refereshAccessToken )
 router.post("/change-password", verifyJWT, changeCurrentUserPassword); 
 router.post("/profile", verifyJWT, getUserProfile); 
 router.post("/profile-update", 

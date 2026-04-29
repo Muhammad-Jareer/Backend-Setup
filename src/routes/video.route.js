@@ -1,9 +1,13 @@
-import videoUpload from "../controllers/video.controller.js";
+import { getVideoOwnerDetails, videoUpload } from "../controllers/video.controller.js";
 import { Router } from "express";
 import {upload} from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router();
 
+
+router.get("/get-video-owner/:videoId", getVideoOwnerDetails)
+
+// Protected Routes
 router.post("/video-upload",
     verifyJWT,
     upload.fields([
