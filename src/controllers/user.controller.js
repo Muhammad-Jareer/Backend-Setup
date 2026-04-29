@@ -410,40 +410,96 @@ const verifyUser = asyncHandler(async (req, res) => {
 })
 
 const getWatchHistory = asyncHandler(async (req, res) => {
-    const {username} = req.params;
-    if(!username || !(username.trim())) throw new ApiError(400, "username is required");
+
+    const { username } = req.params;
+
+    if (!username || !username.trim()) {
+        throw new ApiError(400, "username is required");
+    }
 
     const watchHistory = await User.aggregate([
-       { $match: {
-            username: username.toLowerCase()
-        }},
-        {$lookup: {
-            from: "videos",
-            foreignField: "_id",
-            localField: "watchHistory",
-            as: "watchHistory"
-        }},
-        {$addFields: {
-            videosCount: {
-                $size: "$watchHistory"
+        {
+            $match: {
+                username: username.toLowerCase()
             }
-        }},
+        },
+
+        // 🔥 get watched videos
+        {
+            $lookup: {
+                from: "videos",
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+
+                pipeline: [
+
+                    // 🔥 get video owner
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner"
+                        }
+                    },
+
+                    // convert array → object
+                    {
+                        $addFields: {
+                            owner: {
+                                $first: "$owner"
+                            }
+                        }
+                    },
+
+                    // clean owner fields
+                    {
+                        $project: {
+                            title: 1,
+                            thumbnail: 1,
+                            duration: 1,
+                            views: 1,
+                            createdAt: 1,
+                            owner: {
+                                _id: 1,
+                                username: 1,
+                                fullname: 1,
+                                avatar: 1
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+
+        // count videos
+        {
+            $addFields: {
+                videosCount: {
+                    $size: "$watchHistory"
+                }
+            }
+        },
+
+        // final response
         {
             $project: {
-                fullname: 1,
                 username: 1,
+                fullname: 1,
                 watchHistory: 1,
-                videosCount: 1,
+                videosCount: 1
             }
         }
+    ]);
 
-    ])
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            watchHistory[0],
+            "Watch history fetched successfully"
+        )
+    );
+});
 
-    console.log(watchHistory);
-    
-    res
-    .status(200)
-    .json(new ApiResponse(200, watchHistory[0], "watch hostory fetched successfully"))
-})
-
-export {registerUser, loginUser, logoutUser, refereshAccessToken, changeCurrentUserPassword, getUserProfile, updateProfile, deleteUser, forgotPassword, resetPassword, verifyEmail, verifyUser, getWatchHistory }
+export { registerUser, loginUser, logoutUser, refereshAccessToken, changeCurrentUserPassword, getUserProfile, updateProfile, deleteUser, forgotPassword, resetPassword, verifyEmail, verifyUser, getWatchHistory }

@@ -4,6 +4,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
+import { User } from "../models/user.model.js";
 
 const videoUpload = asyncHandler(async (req, res) => {
     const { title, description } = req.body;
@@ -93,7 +94,7 @@ const getVideoOwnerDetails = asyncHandler(async(req, res) => {
                         then: true,
                         else: false
                     }
-                }
+                },
             }
         },
         {
@@ -116,4 +117,39 @@ const getVideoOwnerDetails = asyncHandler(async(req, res) => {
     .json(new ApiResponse(200, videoOwnerDetails[0], "Video owner data feteched successfully"))
 })
 
-export {videoUpload, getVideoOwnerDetails};
+const watchVideo = asyncHandler(async (req, res) => {
+
+    const { videoId } = req.params;
+
+    if (!videoId || !videoId.trim()) {
+        throw new ApiError(400, "Video ID is required");
+    }
+
+    const videoObjectId = new mongoose.Types.ObjectId(videoId);
+    const userId = req.user._id;
+
+    // 1️⃣ Add to watch history
+    await User.findByIdAndUpdate(
+        userId,
+        {
+            $addToSet: {
+                watchHistory: videoObjectId
+            }
+        }
+    );
+
+    // 2️⃣ Increase views
+    await Video.findByIdAndUpdate(
+        videoObjectId,
+        {
+            $inc: { views: 1 }
+        }
+    );
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Video watched successfully")
+    );
+});
+
+
+export {videoUpload, getVideoOwnerDetails, watchVideo};
