@@ -31,7 +31,7 @@ router.post("/referesh-token", refereshAccessToken )
 router.post("/logout", verifyJWT, logoutUser )
 router.post("/change-password", verifyJWT, changeCurrentUserPassword); 
 router.post("/profile", verifyJWT, getUserProfile); 
-router.post("/profile-update", 
+router.patch("/profile-update", 
     upload.fields([
         {
             name: "newAvatar",
