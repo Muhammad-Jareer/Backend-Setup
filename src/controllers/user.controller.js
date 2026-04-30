@@ -413,28 +413,36 @@ const getWatchHistory = asyncHandler(async (req, res) => {
 
     const { username } = req.params;
 
-    if (!username || !username.trim()) {
+    if (!username?.trim()) {
         throw new ApiError(400, "username is required");
     }
 
-    const watchHistory = await User.aggregate([
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.max(Number(req.query.limit) || 10, 1);
+    const sortBy = req.query.sortBy || "createdAt";
+    const sortType = req.query.sortType === "asc" ? 1 : -1;
+
+    const skip = (page - 1) * limit;
+
+    const result = await User.aggregate([
         {
             $match: {
                 username: username.toLowerCase()
             }
         },
 
-        // 🔥 get watched videos
         {
             $lookup: {
                 from: "videos",
                 localField: "watchHistory",
                 foreignField: "_id",
-                as: "watchHistory",
-
+                as: "videos",
                 pipeline: [
 
-                    // 🔥 get video owner
+                    { $sort: { [sortBy]: sortType } },
+                    { $skip: skip },
+                    { $limit: limit },
+
                     {
                         $lookup: {
                             from: "users",
@@ -443,17 +451,11 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                             as: "owner"
                         }
                     },
-
-                    // convert array → object
                     {
                         $addFields: {
-                            owner: {
-                                $first: "$owner"
-                            }
+                            owner: { $first: "$owner" }
                         }
                     },
-
-                    // clean owner fields
                     {
                         $project: {
                             title: 1,
@@ -473,30 +475,39 @@ const getWatchHistory = asyncHandler(async (req, res) => {
             }
         },
 
-        // count videos
         {
             $addFields: {
-                videosCount: {
-                    $size: "$watchHistory"
-                }
+                totalVideos: { $size: "$watchHistory" }
             }
         },
 
-        // final response
         {
             $project: {
+                _id: 0,
                 username: 1,
                 fullname: 1,
-                watchHistory: 1,
-                videosCount: 1
+                videos: 1,
+                totalVideos: 1
             }
         }
     ]);
 
+    const data = result[0];
+
+    const totalPages = Math.ceil(data.totalVideos / limit);
+
     return res.status(200).json(
         new ApiResponse(
             200,
-            watchHistory[0],
+            {
+                videos: data.videos,
+                pagination: {
+                    totalVideos: data.totalVideos,
+                    totalPages,
+                    currentPage: page,
+                    limit
+                }
+            },
             "Watch history fetched successfully"
         )
     );
