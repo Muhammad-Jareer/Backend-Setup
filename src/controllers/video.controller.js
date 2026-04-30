@@ -206,5 +206,15 @@ const getAllVideos = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, result, "Videos feed fetched successfully"))
 })
 
+const getVideo = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+    if( !videoId || !videoId.trim() ) throw new ApiError(401, "Video id is not correct")
+    const objectId = new mongoose.Types.ObjectId(videoId);
+
+    const video = await Video.findOne({
+        _id: objectId
+    }).select("-owner -thumbnail")
+})
+
 
 export {videoUpload, getVideoCreatorDetails, watchVideo, getAllVideos };
