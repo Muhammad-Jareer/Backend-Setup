@@ -1,11 +1,11 @@
-import { getVideoOwnerDetails, videoUpload, watchVideo } from "../controllers/video.controller.js";
+import { getVideoCreatorDetails, videoUpload, watchVideo } from "../controllers/video.controller.js";
 import { Router } from "express";
 import {upload} from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router();
 
 
-router.get("/get-video-owner/:videoId", getVideoOwnerDetails)
+router.get("/get-video-owner/:videoId", getVideoCreatorDetails)
 router.post("/watch-video/:videoId", verifyJWT, watchVideo);
 
 // Protected Routes

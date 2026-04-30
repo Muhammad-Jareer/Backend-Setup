@@ -42,7 +42,7 @@ const videoUpload = asyncHandler(async (req, res) => {
 });
 
 
-const getVideoOwnerDetails = asyncHandler(async(req, res) => {
+const getVideoCreatorDetails = asyncHandler(async(req, res) => {
     const{videoId} = req.params;
     if(!videoId || !(videoId.trim())) throw new ApiError(400, "video id is incorrect")
 
@@ -152,4 +152,4 @@ const watchVideo = asyncHandler(async (req, res) => {
 });
 
 
-export {videoUpload, getVideoOwnerDetails, watchVideo};
+export {videoUpload, getVideoCreatorDetails, watchVideo};
