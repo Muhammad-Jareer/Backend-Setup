@@ -41,7 +41,6 @@ const videoUpload = asyncHandler(async (req, res) => {
     );
 });
 
-
 const getVideoCreatorDetails = asyncHandler(async(req, res) => {
     const{videoId} = req.params;
     if(!videoId || !(videoId.trim())) throw new ApiError(400, "video id is incorrect")
@@ -151,5 +150,61 @@ const watchVideo = asyncHandler(async (req, res) => {
     );
 });
 
+const getAllVideos = asyncHandler(async (req, res) => {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.max(Number(req.query.limit) || 10, 1);
+    const sortBy = req.query.sortBy || "createdAt";
+    const sortType = req.query.sortType === "asc" ? 1 : -1;
 
-export {videoUpload, getVideoCreatorDetails, watchVideo};
+    const skip = (page - 1) * limit;
+
+    const result = await Video.aggregate([
+        {
+            $match: {
+                isPublished: true
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {$sort: {[sortBy]: sortType}},
+                    {$skip: skip},
+                    {$limit: limit},
+                ]
+            }
+        }, 
+        {
+            $addFields: {
+                owner: {$first: "$owner"},
+            }
+        }, 
+        {
+            $project: {
+                title: 1,
+                thumbnail: 1,
+                videoFile: 1,
+                duration: 1,
+                totalVIdeos: 1,
+                views: 1,
+                createdAt: 1,
+                owner: {
+                    _id: 1,
+                    username: 1,
+                    fullname: 1,
+                    avatar: 1
+                }
+            }
+        }
+    ])
+
+    return res 
+    .status(200)
+    .json(new ApiResponse(200, result, "Videos feed fetched successfully"))
+})
+
+
+export {videoUpload, getVideoCreatorDetails, watchVideo, getAllVideos };
