@@ -78,6 +78,14 @@ const getVideoCreatorDetails = asyncHandler(async(req, res) => {
             }
         },
         {
+            $lookup: {
+                from: "likes",
+                foreignField: "video",
+                localField: "owner",
+                as: "likes"
+            }
+        },
+        {
             $addFields: {
                 subscribersCount: {
                     $size: "$subscribers"
@@ -85,10 +93,22 @@ const getVideoCreatorDetails = asyncHandler(async(req, res) => {
                 subscribedToCount: {
                     $size: "$subscribedTo"
                 },
+                likesCount: {
+                    $size: "$likes"
+                },
                 isSubscribed: {
                     $cond: {
                         if: {
                             $in: [req.user?._id, "$subscribers.subscriber"]
+                        },
+                        then: true,
+                        else: false
+                    }
+                },
+                isLiked: {
+                    $cond: {
+                        if: {
+                            $in: [req.user?._id, "$likes.owner"]
                         },
                         then: true,
                         else: false
@@ -106,7 +126,9 @@ const getVideoCreatorDetails = asyncHandler(async(req, res) => {
                 owner: 1,
                 subscribersCount: 1,
                 subscribedToCount: 1,
-                isSubscribed: 1
+                isSubscribed: 1,
+                isLiked: 1,
+                likesCount: 1,
             }
         }
     ])
