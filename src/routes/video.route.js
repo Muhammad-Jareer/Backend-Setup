@@ -6,7 +6,7 @@ const router = Router();
 
 
 router.get("/get-video-owner/:videoId", getVideoCreatorDetails)
-router.get("/feed", getAllVideos);
+router.get("/video-feed", getAllVideos);
 router.get("/video/:videoId", getSingleVideo);
 
 // Protected Routes

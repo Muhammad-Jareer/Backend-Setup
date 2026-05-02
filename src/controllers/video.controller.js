@@ -297,12 +297,14 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
     if( !videoId ) throw new ApiError(400, "Video Id is missing or incorrect")
 
-    await Video.findByIdAndDelete(
+    const deletedVideo = await Video.findByIdAndDelete(
         {
             _id: videoId,
             owner: req.user._id
         }
     )
+
+    if(!deletedVideo) throw new ApiError(404, "Video not found or you don't own it")
 
     return res
     .status(200)
