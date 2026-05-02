@@ -1,4 +1,4 @@
-import { getAllVideos, getVideoCreatorDetails, videoUpload, watchVideo } from "../controllers/video.controller.js";
+import { deleteVideo, getAllVideos, getSingleVideo, getVideoCreatorDetails, updateVideo, videoUpload, watchVideo } from "../controllers/video.controller.js";
 import { Router } from "express";
 import {upload} from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -7,9 +7,11 @@ const router = Router();
 
 router.get("/get-video-owner/:videoId", getVideoCreatorDetails)
 router.get("/feed", getAllVideos);
+router.get("/video/:videoId", getSingleVideo);
 
 // Protected Routes
 router.post("/watch-video/:videoId", verifyJWT, watchVideo);
+router.delete("/delete-video/:videoId", verifyJWT, deleteVideo);
 router.post("/video-upload",
     verifyJWT,
     upload.fields([
@@ -24,5 +26,22 @@ router.post("/video-upload",
     ]),
     videoUpload
 )
+
+router.patch("/update-video/:videoId",
+    verifyJWT,
+    upload.fields([
+        {
+            name: "newVideo",
+            maxCount: 1
+        },
+        {
+            name: "newThumbnail",
+            maxCount: 1
+        }
+    ]),
+    updateVideo
+)
+
+
 
 export default router;

@@ -206,7 +206,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, result, "Videos feed fetched successfully"))
 })
 
-const getVideo = asyncHandler(async (req, res) => {
+const getSingleVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
     if( !videoId || !videoId.trim() ) throw new ApiError(401, "Video id is not correct")
     const objectId = new mongoose.Types.ObjectId(videoId);
@@ -214,7 +214,77 @@ const getVideo = asyncHandler(async (req, res) => {
     const video = await Video.findOne({
         _id: objectId
     }).select("-owner -thumbnail")
+
+    if(!video) throw new ApiError(404, "video not found")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, video, "Video is successfully fetched"))
 })
 
+const updateVideo = asyncHandler(async (req, res) => {
+    const { newTitle, newDescription } = req.body;
+    const { videoId } = req.params;
 
-export {videoUpload, getVideoCreatorDetails, watchVideo, getAllVideos };
+    const thumbnailLocalPath = req.files?.newThumbnail?.[0]?.path;
+    const videoLocalPath = req.files?.newVideo?.[0]?.path;
+
+    const updatedFields = {};
+    if( newTitle.trim()) {
+        updatedFields.title =  newTitle.trim();
+    } 
+    if( newDescription.trim()) {
+        updatedFields.description = newDescription.trim();
+    } 
+
+    if(thumbnailLocalPath) {
+        const newThumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+        if(!newThumbnail?.secure_url) throw new ApiError(400, "Thumbnail upload failed")
+
+        updatedFields.thumbnail = newThumbnail?.secure_url;
+    }
+
+    if(videoLocalPath) {
+        const newVideo = await uploadOnCloudinary(videoLocalPath)
+        if(!newVideo?.secure_url) throw new ApiError(400, "Video file upload failed")
+
+        updatedFields.videoFile = newVideo?.secure_url;
+    }
+    
+    if(Object.keys(updatedFields).length === 0 ) throw new ApiError(400, "No fields provided for update")
+
+    const updatedVideo = await Video.findByIdAndUpdate(
+        {
+        _id: videoId,
+        owner: req.user._id
+        },
+        {$set: updatedFields},
+        {new: true, runValidators: true}
+    )
+
+    if(!updatedVideo) throw new ApiError(404, "Video not found")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, updatedVideo, "Video file successfully updated"))
+    
+})
+
+const deleteVideo = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+
+    if( !videoId ) throw new ApiError(400, "Video Id is missing or incorrect")
+
+    await Video.findByIdAndDelete(
+        {
+            _id: videoId,
+            owner: req.user._id
+        }
+    )
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Video Deleted Successfully"))
+})
+
+export {videoUpload, getVideoCreatorDetails, watchVideo, getAllVideos, getSingleVideo, updateVideo, deleteVideo };
