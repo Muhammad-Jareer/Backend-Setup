@@ -71,7 +71,7 @@ const getUserTweet = asyncHandler(async (req, res) => {
     const userTweet = await Tweet.find({
         owner: objectId
     })
-    if(!userTweet) throw new ApiError(400, "user tweets not found")
+    if(!userTweet) throw new ApiError(404, "user tweets not found")
 
     return res
     .status(200)
@@ -142,5 +142,60 @@ const deleteTweet = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Video not found or you don't own it"))
 })
 
+const tweetLikes = asyncHandler(async (req, res) => {
+    const { tweetId } = req.params;
+    console.log("tweetId:", tweetId);
 
-export {createTweet, getAllTweets, getUserTweet, getSignleTweet, getTweetByUsername, updateTweet, deleteTweet }
+const testTweet = await Tweet.findById(tweetId);
+
+    const userId = new mongoose.Types.ObjectId(req.user._id);
+
+    const tweetData = await Tweet.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(tweetId)
+            }
+        },
+        {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "likeableId",
+                as: "likes"
+            }
+        },
+
+        {
+            $addFields: {
+                likesCount: { $size: "$likes" },
+
+                isLiked: {
+                    $in: [userId, "$likes.owner"]
+                }
+            }
+        },
+
+        {
+            $project: {
+                content: 1,
+                owner: 1,
+                likesCount: 1,
+                isLiked: 1,
+                createdAt: 1
+            }
+        }
+    ]);
+
+    if (!tweetData.length)
+        throw new ApiError(404, "Tweet not found");
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            tweetData[0],
+            "Tweet likes fetched successfully"
+        )
+    );
+});
+
+export {createTweet, getAllTweets, getUserTweet, getSignleTweet, getTweetByUsername, updateTweet, deleteTweet, tweetLikes }
