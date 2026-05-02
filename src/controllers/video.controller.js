@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { set } from "mongoose";
 import { Video } from "../models/video.model.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -287,4 +287,26 @@ const deleteVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Video Deleted Successfully"))
 })
 
-export {videoUpload, getVideoCreatorDetails, watchVideo, getAllVideos, getSingleVideo, updateVideo, deleteVideo };
+const updateVideoPrivacy = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+
+    if(!videoId) throw new ApiError(400, "Video id is missing or incorrect")
+
+    const video = await Video.findOne({
+        _id: videoId,
+        owner: req.user._id
+    });
+
+    if(!video) throw new ApiError(404, "Video not found"); 
+
+    video.isPublished = !video.isPublished;
+
+    await video.save({validateBeforeSave: false})
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Video privacy status changed successfully"))
+})
+
+
+export {videoUpload, getVideoCreatorDetails, watchVideo, getAllVideos, getSingleVideo, updateVideo, deleteVideo, updateVideoPrivacy };

@@ -1,4 +1,4 @@
-import { deleteVideo, getAllVideos, getSingleVideo, getVideoCreatorDetails, updateVideo, videoUpload, watchVideo } from "../controllers/video.controller.js";
+import { deleteVideo, getAllVideos, getSingleVideo, getVideoCreatorDetails, updateVideo, updateVideoPrivacy, videoUpload, watchVideo } from "../controllers/video.controller.js";
 import { Router } from "express";
 import {upload} from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -12,6 +12,7 @@ router.get("/video/:videoId", getSingleVideo);
 // Protected Routes
 router.post("/watch-video/:videoId", verifyJWT, watchVideo);
 router.delete("/delete-video/:videoId", verifyJWT, deleteVideo);
+router.patch("/update-privacy/:videoId/togglePublish", verifyJWT, updateVideoPrivacy);
 router.post("/video-upload",
     verifyJWT,
     upload.fields([
