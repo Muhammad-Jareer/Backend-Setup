@@ -144,9 +144,6 @@ const deleteTweet = asyncHandler(async (req, res) => {
 
 const tweetLikes = asyncHandler(async (req, res) => {
     const { tweetId } = req.params;
-    console.log("tweetId:", tweetId);
-
-const testTweet = await Tweet.findById(tweetId);
 
     const userId = new mongoose.Types.ObjectId(req.user._id);
 
@@ -164,6 +161,14 @@ const testTweet = await Tweet.findById(tweetId);
                 as: "likes"
             }
         },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "user"
+            }
+        },
 
         {
             $addFields: {
@@ -171,17 +176,23 @@ const testTweet = await Tweet.findById(tweetId);
 
                 isLiked: {
                     $in: [userId, "$likes.owner"]
-                }
+                },
+                userDetails: {$first: "$user"}
             }
         },
 
         {
             $project: {
                 content: 1,
-                owner: 1,
                 likesCount: 1,
                 isLiked: 1,
-                createdAt: 1
+                createdAt: 1,
+                userDetails: {
+                    _id: 1,
+                    username: 1,
+                    fullname: 1,
+                    avatar: 1
+                }
             }
         }
     ]);
