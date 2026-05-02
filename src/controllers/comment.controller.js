@@ -9,15 +9,15 @@ const createComment = asyncHandler(async (req, res) => {
     const {comment} = req.body
     if(!comment || !(comment.trim() )) throw new ApiError(400, "comment is required")
 
-    const commnet = await Comment.create({
+    const createdComment = await Comment.create({
         content: comment,
         video: videoId,
         owner: req.user._id
     })
 
     return res
-    .status(200)
-    .json(new ApiResponse(200, commnet, "video is liked"))
+    .status(201)
+    .json(new ApiResponse(201, createdComment, "comment is created"))
 })
 
 export {createComment}

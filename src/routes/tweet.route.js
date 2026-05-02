@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { toggleLike } from "../controllers/like.controller.js";
+import { createTweet } from "../controllers/tweet.controller.js";
 const router = Router();
 
-router.post("/:type/:id/like", verifyJWT, toggleLike);
+router.post("/create-tweet", verifyJWT, createTweet);
 
 
 export default router;
