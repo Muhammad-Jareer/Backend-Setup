@@ -3,7 +3,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
-const toggleLike = asyncHandler(async (req, res) => {
+const toggleVideoLike = asyncHandler(async (req, res) => {
     const {videoId} = req.params;
     if(!videoId) throw new ApiError(400, "video id is missing or incorrects");
 
@@ -32,4 +32,5 @@ const toggleLike = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "video is liked"))
 })
 
-export {toggleLike}
+
+export {toggleVideoLike}

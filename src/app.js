@@ -20,12 +20,14 @@ import userRouter from "./routes/user.route.js"
 import videoRouter from "./routes/video.route.js"
 import channelRouter from "./routes/channel.routes.js"
 import likeRouter from "./routes/like.route.js"
+import commentRouter from "./routes/comment.route.js"
 
 //Routes Declaration
 app.use('/api/v1/users', userRouter)
 app.use('/api/v1/videos', videoRouter)
 app.use('/api/v1/channel', channelRouter)
 app.use('/api/v1/likes', likeRouter)
+app.use('/api/v1/comments', commentRouter)
 
 
 
